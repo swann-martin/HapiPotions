@@ -5,10 +5,19 @@ import { Field, Form as FinalForm } from 'react-final-form';
 import isEqual from 'lodash/isEqual';
 import classNames from 'classnames';
 
-import { FormattedMessage, injectIntl, intlShape } from '../../../util/reactIntl';
+import {
+  FormattedMessage,
+  injectIntl,
+  intlShape,
+} from '../../../util/reactIntl';
 import { ensureCurrentUser } from '../../../util/data';
 import { propTypes } from '../../../util/types';
 import * as validators from '../../../util/validators';
+import {
+  autocompleteSearchRequired,
+  autocompletePlaceSelected,
+  composeValidators,
+} from '../../../util/validators';
 import { isUploadImageOverLimitError } from '../../../util/errors';
 
 import {
@@ -19,6 +28,7 @@ import {
   IconSpinner,
   FieldTextInput,
   H4,
+  FieldLocationAutocompleteInput,
 } from '../../../components';
 
 import css from './ProfileSettingsForm.module.css';
@@ -72,6 +82,7 @@ class ProfileSettingsFormComponent extends Component {
             form,
             marketplaceName,
             values,
+            autoFocus,
           } = fieldRenderProps;
 
           const user = ensureCurrentUser(currentUser);
@@ -86,7 +97,9 @@ class ProfileSettingsFormComponent extends Component {
           const firstNameRequiredMessage = intl.formatMessage({
             id: 'ProfileSettingsForm.firstNameRequired',
           });
-          const firstNameRequired = validators.required(firstNameRequiredMessage);
+          const firstNameRequired = validators.required(
+            firstNameRequiredMessage
+          );
 
           // Last name
           const lastNameLabel = intl.formatMessage({
@@ -116,14 +129,21 @@ class ProfileSettingsFormComponent extends Component {
             ) : null;
 
           const hasUploadError = !!uploadImageError && !uploadInProgress;
-          const errorClasses = classNames({ [css.avatarUploadError]: hasUploadError });
-          const transientUserProfileImage = profileImage.uploadedImage || user.profileImage;
-          const transientUser = { ...user, profileImage: transientUserProfileImage };
+          const errorClasses = classNames({
+            [css.avatarUploadError]: hasUploadError,
+          });
+          const transientUserProfileImage =
+            profileImage.uploadedImage || user.profileImage;
+          const transientUser = {
+            ...user,
+            profileImage: transientUserProfileImage,
+          };
 
           // Ensure that file exists if imageFromFile is used
           const fileExists = !!profileImage.file;
           const fileUploadInProgress = uploadInProgress && fileExists;
-          const delayAfterUpload = profileImage.imageId && this.state.uploadDelay;
+          const delayAfterUpload =
+            profileImage.imageId && this.state.uploadDelay;
           const imageFromFile =
             fileExists && (fileUploadInProgress || delayAfterUpload) ? (
               <ImageFromFile
@@ -183,9 +203,14 @@ class ProfileSettingsFormComponent extends Component {
           const classes = classNames(rootClassName || css.root, className);
           const submitInProgress = updateInProgress;
           const submittedOnce = Object.keys(this.submittedValues).length > 0;
-          const pristineSinceLastSubmit = submittedOnce && isEqual(values, this.submittedValues);
+          const pristineSinceLastSubmit =
+            submittedOnce && isEqual(values, this.submittedValues);
           const submitDisabled =
-            invalid || pristine || pristineSinceLastSubmit || uploadInProgress || submitInProgress;
+            invalid ||
+            pristine ||
+            pristineSinceLastSubmit ||
+            uploadInProgress ||
+            submitInProgress;
 
           return (
             <Form
@@ -210,7 +235,14 @@ class ProfileSettingsFormComponent extends Component {
                   disabled={uploadInProgress}
                 >
                   {fieldProps => {
-                    const { accept, id, input, label, disabled, uploadImageError } = fieldProps;
+                    const {
+                      accept,
+                      id,
+                      input,
+                      label,
+                      disabled,
+                      uploadImageError,
+                    } = fieldProps;
                     const { name, type } = input;
                     const onChange = e => {
                       const file = e.target.files[0];
@@ -289,7 +321,9 @@ class ProfileSettingsFormComponent extends Component {
                   />
                 </div>
               </div>
-              <div className={classNames(css.sectionContainer, css.lastSection)}>
+              <div
+                className={classNames(css.sectionContainer, css.lastSection)}
+              >
                 <H4 as="h2" className={css.sectionTitle}>
                   <FormattedMessage id="ProfileSettingsForm.bioHeading" />
                 </H4>
@@ -301,9 +335,40 @@ class ProfileSettingsFormComponent extends Component {
                   placeholder={bioPlaceholder}
                 />
                 <p className={css.bioInfo}>
-                  <FormattedMessage id="ProfileSettingsForm.bioInfo" values={{ marketplaceName }} />
+                  <FormattedMessage
+                    id="ProfileSettingsForm.bioInfo"
+                    values={{ marketplaceName }}
+                  />
                 </p>
               </div>
+
+              <div
+                className={classNames(css.sectionContainer, css.lastSection)}
+              >
+                <H4 as="h2" className={css.sectionTitle}>
+                  <FormattedMessage id="ProfileSettingsForm.addressHeading" />
+                </H4>
+
+                <FieldLocationAutocompleteInput
+                  rootClassName={css.locationAddress}
+                  inputClassName={css.locationAutocompleteInput}
+                  iconClassName={css.locationAutocompleteInputIcon}
+                  predictionsClassName={css.predictionsRoot}
+                  validClassName={css.validLocation}
+                  autoFocus={autoFocus}
+                  name="location"
+                  label="Location"
+                  placeholder="Add location"
+                  useDefaultPredictions={false}
+                  format={v => v}
+                  valueFromForm={values.location}
+                  validate={composeValidators(
+                    autocompleteSearchRequired('Please add a location'),
+                    autocompletePlaceSelected('Location not recognized')
+                  )}
+                />
+              </div>
+
               {submitError}
               <Button
                 className={css.submitButton}
