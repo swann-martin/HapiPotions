@@ -175,12 +175,14 @@ export const MainContent = props => {
     reviews,
     queryReviewsError,
     viewport,
+    addresses,
   } = props;
 
   const hasListings = listings.length > 0;
   const hasFavourites = favourite.length > 0;
   const isMobileLayout = viewport.width < MAX_MOBILE_SCREEN_WIDTH;
   const hasBio = !!bio;
+  const hasAddresses = !!addresses;
 
   const listingsContainerClasses = classNames(css.listingsContainer, {
     [css.withBioMissingAbove]: !hasBio,
@@ -220,10 +222,25 @@ export const MainContent = props => {
         </div>
       ) : null}
 
+      {hasAddresses ? (
+        <div className={listingsContainerClasses}>
+          <H4 as="h2" className={css.listingsTitle}>
+            <FormattedMessage id="ProfilePage.Locations" />
+          </H4>
+          {addresses.map(
+            (address, id) =>
+              !!address && (
+                <div key={id + '-' + address}>
+                  <span>{address}</span>
+                </div>
+              )
+          )}
+        </div>
+      ) : null}
       {hasFavourites ? (
         <div className={listingsContainerClasses}>
           <H4 as="h2" className={css.listingsTitle}>
-            <FormattedMessage id="Favoris" />
+            <FormattedMessage id="ProfilePage.Favorites" />
           </H4>
           <ul className={css.listings}>
             {listings
@@ -269,8 +286,14 @@ const ProfilePageComponent = props => {
     ensuredCurrentUser.id &&
     profileUser.id &&
     ensuredCurrentUser.id.uuid === profileUser.id.uuid;
-  const { bio, displayName } = profileUser?.attributes?.profile || {};
 
+  const { bio, displayName, publicData } =
+    profileUser?.attributes?.profile || {};
+  const addresses = [
+    publicData?.address1?.selectedPlace?.address,
+    publicData?.address2?.selectedPlace?.address,
+  ];
+  console.log('address', publicData);
   const schemaTitleVars = {
     name: displayName,
     marketplaceName: config.marketplaceName,
@@ -309,6 +332,7 @@ const ProfilePageComponent = props => {
           bio={bio}
           favourite={user?.favourite}
           displayName={displayName}
+          addresses={addresses}
           userShowError={userShowError}
           {...rest}
         />

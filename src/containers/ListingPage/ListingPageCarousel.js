@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { array, arrayOf, bool, func, shape, string, oneOf, object } from 'prop-types';
+import {
+  array,
+  arrayOf,
+  bool,
+  func,
+  shape,
+  string,
+  oneOf,
+  object,
+} from 'prop-types';
 import { compose } from 'redux';
 import { connect } from 'react-redux';
 import { useHistory, useLocation } from 'react-router-dom';
@@ -37,7 +46,10 @@ import {
 } from '../../transactions/transaction';
 
 import { getMarketplaceEntities } from '../../ducks/marketplaceData.duck';
-import { manageDisableScrolling, isScrollingDisabled } from '../../ducks/ui.duck';
+import {
+  manageDisableScrolling,
+  isScrollingDisabled,
+} from '../../ducks/ui.duck';
 import { initializeCardPaymentData } from '../../ducks/stripe.duck.js';
 
 import {
@@ -58,6 +70,7 @@ import {
   setInitialValues,
   fetchTimeSlots,
   fetchTransactionLineItems,
+  updateLikes,
 } from './ListingPage.duck';
 
 import {
@@ -68,6 +81,7 @@ import {
   handleContactUser,
   handleSubmitInquiry,
   handleSubmit,
+  handleToggleFavorites,
 } from './ListingPage.shared';
 import ActionBarMaybe from './ActionBarMaybe';
 import SectionTextMaybe from './SectionTextMaybe';
@@ -77,8 +91,10 @@ import SectionReviews from './SectionReviews';
 import SectionAuthorMaybe from './SectionAuthorMaybe';
 import SectionMapMaybe from './SectionMapMaybe';
 import SectionGallery from './SectionGallery';
+import SectionLikes from './SectionLikes';
 
 import css from './ListingPage.module.css';
+import { updateProfile } from '../ProfileSettingsPage/ProfileSettingsPage.duck';
 
 const MIN_LENGTH_FOR_LONG_WORDS_IN_TITLE = 16;
 
@@ -88,6 +104,8 @@ export const ListingPageComponent = props => {
   const [inquiryModalOpen, setInquiryModalOpen] = useState(
     props.inquiryModalOpenForListingId === props.params.id
   );
+
+  const [likesOffset, updateLikesOffset] = useState(0);
 
   const {
     isAuthenticated,
@@ -116,18 +134,23 @@ export const ListingPageComponent = props => {
     onInitializeCardPaymentData,
     config,
     routeConfiguration,
+    onUpdateLikes,
+    updateLikesInProgress,
+    onUpdateFavorites,
   } = props;
 
   const listingConfig = config.listing;
   const listingId = new UUID(rawParams.id);
-  const isPendingApprovalVariant = rawParams.variant === LISTING_PAGE_PENDING_APPROVAL_VARIANT;
+  const isPendingApprovalVariant =
+    rawParams.variant === LISTING_PAGE_PENDING_APPROVAL_VARIANT;
   const isDraftVariant = rawParams.variant === LISTING_PAGE_DRAFT_VARIANT;
   const currentListing =
     isPendingApprovalVariant || isDraftVariant
       ? ensureOwnListing(getOwnListing(listingId))
       : ensureListing(getListing(listingId));
 
-  const listingSlug = rawParams.slug || createSlug(currentListing.attributes.title || '');
+  const listingSlug =
+    rawParams.slug || createSlug(currentListing.attributes.title || '');
   const params = { slug: listingSlug, ...rawParams };
 
   const listingPathParamType = isDraftVariant
@@ -136,7 +159,8 @@ export const ListingPageComponent = props => {
   const listingTab = isDraftVariant ? 'photos' : 'details';
 
   const isApproved =
-    currentListing.id && currentListing.attributes.state !== LISTING_STATE_PENDING_APPROVAL;
+    currentListing.id &&
+    currentListing.attributes.state !== LISTING_STATE_PENDING_APPROVAL;
 
   const pendingIsApproved = isPendingApprovalVariant && isApproved;
 
@@ -149,10 +173,17 @@ export const ListingPageComponent = props => {
     (isPendingApprovalVariant || isDraftVariant) &&
     showListingError &&
     showListingError.status === 403;
-  const shouldShowPublicListingPage = pendingIsApproved || pendingOtherUsersListing;
+  const shouldShowPublicListingPage =
+    pendingIsApproved || pendingOtherUsersListing;
 
   if (shouldShowPublicListingPage) {
-    return <NamedRedirect name="ListingPage" params={params} search={location.search} />;
+    return (
+      <NamedRedirect
+        name="ListingPage"
+        params={params}
+        search={location.search}
+      />
+    );
   }
 
   const topbar = <TopbarContainer />;
@@ -162,10 +193,22 @@ export const ListingPageComponent = props => {
     return <NotFoundPage />;
   } else if (showListingError) {
     // Other error in fetching listing
-    return <ErrorPage topbar={topbar} scrollingDisabled={scrollingDisabled} intl={intl} />;
+    return (
+      <ErrorPage
+        topbar={topbar}
+        scrollingDisabled={scrollingDisabled}
+        intl={intl}
+      />
+    );
   } else if (!currentListing.id) {
     // Still loading the listing
-    return <LoadingPage topbar={topbar} scrollingDisabled={scrollingDisabled} intl={intl} />;
+    return (
+      <LoadingPage
+        topbar={topbar}
+        scrollingDisabled={scrollingDisabled}
+        intl={intl}
+      />
+    );
   }
 
   const {
@@ -189,21 +232,32 @@ export const ListingPageComponent = props => {
   const authorAvailable = currentListing && currentListing.author;
   const userAndListingAuthorAvailable = !!(currentUser && authorAvailable);
   const isOwnListing =
-    userAndListingAuthorAvailable && currentListing.author.id.uuid === currentUser.id.uuid;
+    userAndListingAuthorAvailable &&
+    currentListing.author.id.uuid === currentUser.id.uuid;
 
   const transactionProcessAlias = publicData?.transactionProcessAlias;
-  const processName = resolveLatestProcessName(transactionProcessAlias.split('/')[0]);
+  const processName = resolveLatestProcessName(
+    transactionProcessAlias.split('/')[0]
+  );
   const isBooking = isBookingProcess(processName);
   const isPurchase = isPurchaseProcess(processName);
-  const processType = isBooking ? ('booking' ? isPurchase : 'purchase') : 'inquiry';
+  const processType = isBooking
+    ? 'booking'
+      ? isPurchase
+      : 'purchase'
+    : 'inquiry';
 
   const currentAuthor = authorAvailable ? currentListing.author : null;
   const ensuredAuthor = ensureUser(currentAuthor);
   const noPayoutDetailsSetWithOwnListing =
-    isOwnListing && (processType !== 'inquiry' && !currentUser?.attributes?.stripeConnected);
+    isOwnListing &&
+    (processType !== 'inquiry' && !currentUser?.attributes?.stripeConnected);
   const payoutDetailsWarning = noPayoutDetailsSetWithOwnListing ? (
     <span className={css.payoutDetailsWarning}>
-      <FormattedMessage id="ListingPage.payoutDetailsWarning" values={{ processType }} />
+      <FormattedMessage
+        id="ListingPage.payoutDetailsWarning"
+        values={{ processType }}
+      />
       <NamedLink name="StripePayoutPage">
         <FormattedMessage id="ListingPage.payoutDetailsWarningLink" />
       </NamedLink>
@@ -218,6 +272,14 @@ export const ListingPageComponent = props => {
   const { formattedPrice } = priceData(price, config.currency, intl);
 
   const commonParams = { params, history, routes: routeConfiguration };
+
+  const onToggleFavorites = handleToggleFavorites({
+    ...commonParams,
+    currentUser,
+    onUpdateFavorites,
+    location,
+  });
+
   const onContactUser = handleContactUser({
     ...commonParams,
     currentUser,
@@ -242,7 +304,8 @@ export const ListingPageComponent = props => {
   });
 
   const handleOrderSubmit = values => {
-    const isCurrentlyClosed = currentListing.attributes.state === LISTING_STATE_CLOSED;
+    const isCurrentlyClosed =
+      currentListing.attributes.state === LISTING_STATE_CLOSED;
     if (isOwnListing || isCurrentlyClosed) {
       window.scrollTo(0, 0);
     } else {
@@ -276,9 +339,25 @@ export const ListingPageComponent = props => {
     : {};
   const currentStock = currentListing.currentStock?.attributes?.quantity || 0;
   const schemaAvailability =
-    currentStock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock';
+    currentStock > 0
+      ? 'https://schema.org/InStock'
+      : 'https://schema.org/OutOfStock';
 
-  const createFilterOptions = options => options.map(o => ({ key: `${o.option}`, label: o.label }));
+  const createFilterOptions = options =>
+    options.map(o => ({ key: `${o.option}`, label: o.label }));
+
+  const sectionLikes = (
+    <SectionLikes
+      publicData={currentListing?.attributes?.publicData}
+      listingId={currentListing.id.uuid}
+      onUpdateLikes={onUpdateLikes}
+      currentUser={currentUser}
+      updateLikesInProgress={false}
+      likesOffset={likesOffset}
+      onSubstractLike={() => updateLikesOffset(likesOffset - 1)}
+      onAddLike={() => updateLikesOffset(likesOffset + 1)}
+    />
+  );
 
   return (
     <Page
@@ -302,7 +381,11 @@ export const ListingPageComponent = props => {
         },
       }}
     >
-      <LayoutSingleColumn className={css.pageRoot} topbar={topbar} footer={<FooterContainer />}>
+      <LayoutSingleColumn
+        className={css.pageRoot}
+        topbar={topbar}
+        footer={<FooterContainer />}
+      >
         <div className={css.contentWrapperForProductLayout}>
           <div className={css.mainColumnForProductLayout}>
             {currentListing.id && noPayoutDetailsSetWithOwnListing ? (
@@ -332,7 +415,11 @@ export const ListingPageComponent = props => {
             />
             <div className={css.mobileHeading}>
               <H4 as="h1" className={css.orderPanelTitle}>
-                <FormattedMessage id="ListingPage.orderTitle" values={{ title: richTitle }} />
+                <FormattedMessage
+                  id="ListingPage.orderTitle"
+                  values={{ title: richTitle }}
+                />
+                {sectionLikes}
               </H4>
             </div>
             <SectionTextMaybe text={description} showAsIngress />
@@ -343,15 +430,26 @@ export const ListingPageComponent = props => {
               intl={intl}
             />
             {listingConfig.listingFields.reduce((pickedElements, config) => {
-              const { key, enumOptions, includeForListingTypes, scope = 'public' } = config;
+              const {
+                key,
+                enumOptions,
+                includeForListingTypes,
+                scope = 'public',
+              } = config;
               const listingType = publicData?.listingType;
               const isTargetListingType =
-                includeForListingTypes == null || includeForListingTypes.includes(listingType);
+                includeForListingTypes == null ||
+                includeForListingTypes.includes(listingType);
 
               const value =
-                scope === 'public' ? publicData[key] : scope === 'metadata' ? metadata[key] : null;
+                scope === 'public'
+                  ? publicData[key]
+                  : scope === 'metadata'
+                  ? metadata[key]
+                  : null;
               const hasValue = value != null;
-              return isTargetListingType && config.schemaType === SCHEMA_TYPE_MULTI_ENUM
+              return isTargetListingType &&
+                config.schemaType === SCHEMA_TYPE_MULTI_ENUM
                 ? [
                     ...pickedElements,
                     <SectionMultiEnumMaybe
@@ -361,10 +459,16 @@ export const ListingPageComponent = props => {
                       selectedOptions={value || []}
                     />,
                   ]
-                : isTargetListingType && hasValue && config.schemaType === SCHEMA_TYPE_TEXT
+                : isTargetListingType &&
+                  hasValue &&
+                  config.schemaType === SCHEMA_TYPE_TEXT
                 ? [
                     ...pickedElements,
-                    <SectionTextMaybe key={key} heading={config?.showConfig?.label} text={value} />,
+                    <SectionTextMaybe
+                      key={key}
+                      heading={config?.showConfig?.label}
+                      text={value}
+                    />,
                   ]
                 : pickedElements;
             }, [])}
@@ -375,7 +479,10 @@ export const ListingPageComponent = props => {
               listingId={currentListing.id}
               mapsConfig={config.maps}
             />
-            <SectionReviews reviews={reviews} fetchReviewsError={fetchReviewsError} />
+            <SectionReviews
+              reviews={reviews}
+              fetchReviewsError={fetchReviewsError}
+            />
             <SectionAuthorMaybe
               title={title}
               listing={currentListing}
@@ -392,10 +499,13 @@ export const ListingPageComponent = props => {
           </div>
           <div className={css.orderColumnForProductLayout}>
             <OrderPanel
+              sectionLikes={sectionLikes}
               className={css.productOrderPanel}
               listing={currentListing}
               isOwnListing={isOwnListing}
               onSubmit={handleOrderSubmit}
+              onToggleFavorites={onToggleFavorites}
+              currentUser={currentUser}
               authorLink={
                 <NamedLink
                   className={css.authorNameLink}
@@ -406,10 +516,18 @@ export const ListingPageComponent = props => {
                   {authorDisplayName}
                 </NamedLink>
               }
-              title={<FormattedMessage id="ListingPage.orderTitle" values={{ title: richTitle }} />}
+              title={
+                <FormattedMessage
+                  id="ListingPage.orderTitle"
+                  values={{ title: richTitle }}
+                />
+              }
               titleDesktop={
                 <H4 as="h1" className={css.orderPanelTitle}>
-                  <FormattedMessage id="ListingPage.orderTitle" values={{ title: richTitle }} />
+                  <FormattedMessage
+                    id="ListingPage.orderTitle"
+                    values={{ title: richTitle }}
+                  />
                 </H4>
               }
               payoutDetailsWarning={payoutDetailsWarning}
@@ -424,7 +542,9 @@ export const ListingPageComponent = props => {
               fetchLineItemsError={fetchLineItemsError}
               validListingTypes={config.listing.listingTypes}
               marketplaceCurrency={config.currency}
-              dayCountAvailableForBooking={config.stripe.dayCountAvailableForBooking}
+              dayCountAvailableForBooking={
+                config.stripe.dayCountAvailableForBooking
+              }
               marketplaceName={config.marketplaceName}
             />
           </div>
@@ -467,7 +587,10 @@ ListingPageComponent.propTypes = {
   params: shape({
     id: string.isRequired,
     slug: string,
-    variant: oneOf([LISTING_PAGE_DRAFT_VARIANT, LISTING_PAGE_PENDING_APPROVAL_VARIANT]),
+    variant: oneOf([
+      LISTING_PAGE_DRAFT_VARIANT,
+      LISTING_PAGE_PENDING_APPROVAL_VARIANT,
+    ]),
   }).isRequired,
 
   isAuthenticated: bool.isRequired,
@@ -497,6 +620,7 @@ ListingPageComponent.propTypes = {
   onFetchTransactionLineItems: func.isRequired,
   lineItems: array,
   fetchLineItemsInProgress: bool.isRequired,
+  updateLikesInProgress: bool.isRequired,
   fetchLineItemsError: propTypes.error,
 };
 
@@ -567,15 +691,18 @@ const mapStateToProps = state => {
 };
 
 const mapDispatchToProps = dispatch => ({
+  onUpdateLikes: listingId => dispatch(updateLikes(listingId)),
   onManageDisableScrolling: (componentId, disableScrolling) =>
     dispatch(manageDisableScrolling(componentId, disableScrolling)),
   callSetInitialValues: (setInitialValues, values, saveToSessionStorage) =>
     dispatch(setInitialValues(values, saveToSessionStorage)),
-  onFetchTransactionLineItems: params => dispatch(fetchTransactionLineItems(params)),
+  onFetchTransactionLineItems: params =>
+    dispatch(fetchTransactionLineItems(params)),
   onSendInquiry: (listing, message) => dispatch(sendInquiry(listing, message)),
   onInitializeCardPaymentData: () => dispatch(initializeCardPaymentData()),
   onFetchTimeSlots: (listingId, start, end, timeZone) =>
     dispatch(fetchTimeSlots(listingId, start, end, timeZone)),
+  onUpdateFavorites: payload => dispatch(updateProfile(payload)),
 });
 
 // Note: it is important that the withRouter HOC is **outside** the

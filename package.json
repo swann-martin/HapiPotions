@@ -60,6 +60,7 @@
     "remark-parse": "^9.0.0",
     "remark-rehype": "^8.1.0",
     "seedrandom": "^3.0.5",
+    "sharetribe-flex-integration-sdk": "^1.10.0",
     "sharetribe-flex-sdk": "^v1.20.0",
     "sharetribe-scripts": "6.0.1",
     "sitemap": "^7.1.1",

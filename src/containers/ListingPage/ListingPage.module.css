@@ -726,3 +726,31 @@
     flex-shrink: 0;
   }
 }
+
+.starIcon {
+  border-radius: 11px;
+  height: 2.5rem;
+  width: 2.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  &:hover {
+    background-color: #e3e1e1;
+  }
+}
+
+.starDisabled > svg {
+  fill: gray;
+}
+
+.starIcon > svg {
+  fill: #cdec1d;
+  transition: all 0.2s;
+}
+
+.iconLiked > svg {
+  fill: red;
+  transition: all 0.2s;
+}

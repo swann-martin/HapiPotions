@@ -121,6 +121,14 @@ class ProfileSettingsFormComponent extends Component {
             id: 'ProfileSettingsForm.bioPlaceholder',
           });
 
+          // Location
+          const locationsLabel = intl.formatMessage({
+            id: 'ProfileSettingsForm.locationsLabel',
+          });
+          const locationsPlaceholder = intl.formatMessage({
+            id: 'ProfileSettingsForm.locationsPlaceholder',
+          });
+
           const uploadingOverlay =
             uploadInProgress || this.state.uploadDelay ? (
               <div className={css.uploadingImageOverlay}>
@@ -217,6 +225,7 @@ class ProfileSettingsFormComponent extends Component {
               className={classes}
               onSubmit={e => {
                 this.submittedValues = values;
+                console.log('values submitted', values);
                 handleSubmit(e);
               }}
             >
@@ -321,6 +330,33 @@ class ProfileSettingsFormComponent extends Component {
                   />
                 </div>
               </div>
+
+              <div className={classNames(css.sectionContainer)}>
+                <H4 as="h2" className={css.sectionTitle}>
+                  <FormattedMessage id="ProfileSettingsForm.locationsHeading" />
+                </H4>
+
+                <FieldLocationAutocompleteInput
+                  rootClassName={css.locationAddress}
+                  inputClassName={css.locationAutocompleteInput}
+                  iconClassName={css.locationAutocompleteInputIcon}
+                  predictionsClassName={css.predictionsRoot}
+                  validClassName={css.validLocation}
+                  autoFocus={autoFocus}
+                  name="address1"
+                  id="address1"
+                  label={locationsLabel}
+                  placeholder={locationsPlaceholder}
+                  useDefaultPredictions={false}
+                  format={v => v}
+                  valueFromForm={values?.address1}
+                  validate={composeValidators(
+                    autocompleteSearchRequired('Please add a location'),
+                    autocompletePlaceSelected('Location not recognized')
+                  )}
+                />
+              </div>
+
               <div
                 className={classNames(css.sectionContainer, css.lastSection)}
               >
@@ -340,33 +376,6 @@ class ProfileSettingsFormComponent extends Component {
                     values={{ marketplaceName }}
                   />
                 </p>
-              </div>
-
-              <div
-                className={classNames(css.sectionContainer, css.lastSection)}
-              >
-                <H4 as="h2" className={css.sectionTitle}>
-                  <FormattedMessage id="ProfileSettingsForm.addressHeading" />
-                </H4>
-
-                <FieldLocationAutocompleteInput
-                  rootClassName={css.locationAddress}
-                  inputClassName={css.locationAutocompleteInput}
-                  iconClassName={css.locationAutocompleteInputIcon}
-                  predictionsClassName={css.predictionsRoot}
-                  validClassName={css.validLocation}
-                  autoFocus={autoFocus}
-                  name="location"
-                  label="Location"
-                  placeholder="Add location"
-                  useDefaultPredictions={false}
-                  format={v => v}
-                  valueFromForm={values.location}
-                  validate={composeValidators(
-                    autocompleteSearchRequired('Please add a location'),
-                    autocompletePlaceSelected('Location not recognized')
-                  )}
-                />
               </div>
 
               {submitError}

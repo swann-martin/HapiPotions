@@ -44,15 +44,28 @@ import {
   resolveLatestProcessName,
 } from '../../transactions/transaction';
 
-import { ModalInMobile, PrimaryButton, AvatarSmall, H1, H2 } from '../../components';
+import {
+  ModalInMobile,
+  PrimaryButton,
+  AvatarSmall,
+  H1,
+  H2,
+  Button,
+  SecondaryButton,
+} from '../../components';
 
 import css from './OrderPanel.module.css';
+import SectionLikes from '../../containers/ListingPage/SectionLikes';
 
 const BookingTimeForm = loadable(() =>
-  import(/* webpackChunkName: "BookingTimeForm" */ './BookingTimeForm/BookingTimeForm')
+  import(
+    /* webpackChunkName: "BookingTimeForm" */ './BookingTimeForm/BookingTimeForm'
+  )
 );
 const BookingDatesForm = loadable(() =>
-  import(/* webpackChunkName: "BookingDatesForm" */ './BookingDatesForm/BookingDatesForm')
+  import(
+    /* webpackChunkName: "BookingDatesForm" */ './BookingDatesForm/BookingDatesForm'
+  )
 );
 const InquiryWithoutPaymentForm = loadable(() =>
   import(
@@ -60,7 +73,9 @@ const InquiryWithoutPaymentForm = loadable(() =>
   )
 );
 const ProductOrderForm = loadable(() =>
-  import(/* webpackChunkName: "ProductOrderForm" */ './ProductOrderForm/ProductOrderForm')
+  import(
+    /* webpackChunkName: "ProductOrderForm" */ './ProductOrderForm/ProductOrderForm'
+  )
 );
 
 // This defines when ModalInMobile shows content as Modal
@@ -112,7 +127,11 @@ const handleSubmit = (
     : () => openOrderModal(isOwnListing, isClosed, history, location);
 };
 
-const dateFormattingOptions = { month: 'short', day: 'numeric', weekday: 'short' };
+const dateFormattingOptions = {
+  month: 'short',
+  day: 'numeric',
+  weekday: 'short',
+};
 
 const PriceMaybe = props => {
   const {
@@ -125,14 +144,20 @@ const PriceMaybe = props => {
   } = props;
   const { listingType, unitType } = publicData || {};
 
-  const foundListingTypeConfig = validListingTypes.find(conf => conf.listingType === listingType);
+  const foundListingTypeConfig = validListingTypes.find(
+    conf => conf.listingType === listingType
+  );
   const showPrice = displayPrice(foundListingTypeConfig);
   if (!showPrice || !price) {
     return null;
   }
 
   // Get formatted price or currency code if the currency does not match with marketplace currency
-  const { formattedPrice, priceTitle } = priceData(price, marketplaceCurrency, intl);
+  const { formattedPrice, priceTitle } = priceData(
+    price,
+    marketplaceCurrency,
+    intl
+  );
   // TODO: In CTA, we don't have space to show proper error message for a mismatch of marketplace currency
   //       Instead, we show the currency code in place of the price
   return showCurrencyMismatch ? (
@@ -183,11 +208,17 @@ const OrderPanel = props => {
     fetchLineItemsInProgress,
     fetchLineItemsError,
     payoutDetailsWarning,
+    sectionLikes,
+    onToggleFavorites,
+    currentUser,
   } = props;
 
   const publicData = listing?.attributes?.publicData || {};
-  const { listingType, unitType, transactionProcessAlias = '' } = publicData || {};
-  const processName = resolveLatestProcessName(transactionProcessAlias.split('/')[0]);
+  const { listingType, unitType, transactionProcessAlias = '' } =
+    publicData || {};
+  const processName = resolveLatestProcessName(
+    transactionProcessAlias.split('/')[0]
+  );
   const lineItemUnitType = lineItemUnitTypeMaybe || `line-item/${unitType}`;
 
   const price = listing?.attributes?.price;
@@ -201,7 +232,8 @@ const OrderPanel = props => {
       </p>
     );
   };
-  const showInvalidCurrency = isPaymentProcess && price?.currency !== marketplaceCurrency;
+  const showInvalidCurrency =
+    isPaymentProcess && price?.currency !== marketplaceCurrency;
   const InvalidCurrency = () => {
     return (
       <p className={css.error}>
@@ -214,7 +246,8 @@ const OrderPanel = props => {
   const isClosed = listing?.attributes?.state === LISTING_STATE_CLOSED;
 
   const isBooking = isBookingProcess(processName);
-  const shouldHaveBookingTime = isBooking && [LINE_ITEM_HOUR].includes(lineItemUnitType);
+  const shouldHaveBookingTime =
+    isBooking && [LINE_ITEM_HOUR].includes(lineItemUnitType);
   const showBookingTimeForm = shouldHaveBookingTime && !isClosed && timeZone;
 
   const shouldHaveBookingDates =
@@ -225,7 +258,8 @@ const OrderPanel = props => {
   // which you should include when making API calls.
   const isPurchase = isPurchaseProcess(processName);
   const currentStock = listing.currentStock?.attributes?.quantity;
-  const isOutOfStock = isPurchase && lineItemUnitType === LINE_ITEM_ITEM && currentStock === 0;
+  const isOutOfStock =
+    isPurchase && lineItemUnitType === LINE_ITEM_ITEM && currentStock === 0;
 
   // Show form only when stock is fully loaded. This avoids "Out of stock" UI by
   // default before all data has been downloaded.
@@ -234,16 +268,22 @@ const OrderPanel = props => {
   const showInquiryForm = processName === INQUIRY_PROCESS_NAME;
 
   const supportedProcessesInfo = getSupportedProcessesInfo();
-  const isKnownProcess = supportedProcessesInfo.map(info => info.name).includes(processName);
+  const isKnownProcess = supportedProcessesInfo
+    .map(info => info.name)
+    .includes(processName);
 
-  const { pickupEnabled, shippingEnabled } = listing?.attributes?.publicData || {};
+  const { pickupEnabled, shippingEnabled } =
+    listing?.attributes?.publicData || {};
 
-  const listingTypeConfig = validListingTypes.find(conf => conf.listingType === listingType);
+  const listingTypeConfig = validListingTypes.find(
+    conf => conf.listingType === listingType
+  );
   const displayShipping = displayDeliveryShipping(listingTypeConfig);
   const displayPickup = displayDeliveryPickup(listingTypeConfig);
-  const allowOrdersOfMultipleItems = [STOCK_MULTIPLE_ITEMS, STOCK_INFINITE_MULTIPLE_ITEMS].includes(
-    listingTypeConfig?.stockType
-  );
+  const allowOrdersOfMultipleItems = [
+    STOCK_MULTIPLE_ITEMS,
+    STOCK_INFINITE_MULTIPLE_ITEMS,
+  ].includes(listingTypeConfig?.stockType);
 
   const showClosedListingHelpText = listing.id && isClosed;
   const isOrderOpen = !!parse(location.search).orderOpen;
@@ -257,8 +297,68 @@ const OrderPanel = props => {
   const classes = classNames(rootClassName || css.root, className);
   const titleClasses = classNames(titleClassName || css.orderTitle);
 
+  const isFavorite = currentUser?.attributes.profile.privateData.favorites?.includes(
+    listing.id.uuid
+  );
+
+  const IconStar = () => {
+    return (
+      <svg viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg">
+        <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>
+        <g
+          id="SVGRepo_tracerCarrier"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        ></g>
+        <g id="SVGRepo_iconCarrier">
+          <title>star_fill</title>
+          <g
+            id="页面-1"
+            stroke="none"
+            strokeWidth="1"
+            fill="none"
+            fillRule="evenodd"
+          >
+            <g
+              id="Shape"
+              transform="translate(-240.000000, -48.000000)"
+              fillRule="nonzero"
+            >
+              <g id="star_fill" transform="translate(240.000000, 48.000000)">
+                <path
+                  d="M24,0 L24,24 L0,24 L0,0 L24,0 Z M12.5934901,23.257841 L12.5819402,23.2595131 L12.5108777,23.2950439 L12.4918791,23.2987469 L12.4918791,23.2987469 L12.4767152,23.2950439 L12.4056548,23.2595131 C12.3958229,23.2563662 12.3870493,23.2590235 12.3821421,23.2649074 L12.3780323,23.275831 L12.360941,23.7031097 L12.3658947,23.7234994 L12.3769048,23.7357139 L12.4804777,23.8096931 L12.4953491,23.8136134 L12.4953491,23.8136134 L12.5071152,23.8096931 L12.6106902,23.7357139 L12.6232938,23.7196733 L12.6232938,23.7196733 L12.6266527,23.7031097 L12.609561,23.275831 C12.6075724,23.2657013 12.6010112,23.2592993 12.5934901,23.257841 L12.5934901,23.257841 Z M12.8583906,23.1452862 L12.8445485,23.1473072 L12.6598443,23.2396597 L12.6498822,23.2499052 L12.6498822,23.2499052 L12.6471943,23.2611114 L12.6650943,23.6906389 L12.6699349,23.7034178 L12.6699349,23.7034178 L12.678386,23.7104931 L12.8793402,23.8032389 C12.8914285,23.8068999 12.9022333,23.8029875 12.9078286,23.7952264 L12.9118235,23.7811639 L12.8776777,23.1665331 C12.8752882,23.1545897 12.8674102,23.1470016 12.8583906,23.1452862 L12.8583906,23.1452862 Z M12.1430473,23.1473072 C12.1332178,23.1423925 12.1221763,23.1452606 12.1156365,23.1525954 L12.1099173,23.1665331 L12.0757714,23.7811639 C12.0751323,23.7926639 12.0828099,23.8018602 12.0926481,23.8045676 L12.108256,23.8032389 L12.3092106,23.7104931 L12.3186497,23.7024347 L12.3186497,23.7024347 L12.3225043,23.6906389 L12.340401,23.2611114 L12.337245,23.2485176 L12.337245,23.2485176 L12.3277531,23.2396597 L12.1430473,23.1473072 Z"
+                  id="MingCute"
+                  fillRule="nonzero"
+                ></path>
+                <path
+                  d="M10.9198,2.8677 C11.402,2.03987 12.598,2.03987 13.0801,2.8677 L15.8751,7.66643 L21.3027,8.84175 C22.239,9.0445 22.6086,10.1819 21.9703,10.8963 L18.2701,15.0374 L18.8295,20.5625 C18.926,21.5156 17.9585,22.2186 17.0818,21.8323 L12,19.5929 L6.91816,21.8323 C6.04149,22.2186 5.07395,21.5156 5.17046,20.5625 L5.72987,15.0374 L2.02972,10.8963 C1.3914,10.1819 1.76097,9.0445 2.69728,8.84175 L8.12484,7.66643 L10.9198,2.8677 Z"
+                  id="路径"
+                  fill="#f5c211"
+                ></path>
+              </g>
+            </g>
+          </g>
+        </g>
+      </svg>
+    );
+  };
+
+  const toggleFavorites = () => onToggleFavorites(isFavorite);
+
+  const favoriteButton = isFavorite ? (
+    <SecondaryButton className={css.favoriteButton} onClick={toggleFavorites}>
+      <IconStar /> <FormattedMessage id="OrderPanel.unfavoriteButton" />
+    </SecondaryButton>
+  ) : (
+    <Button className={css.favoriteButton} onClick={toggleFavorites}>
+      <IconStar /> <FormattedMessage id="OrderPanel.addFavoriteButton" />
+    </Button>
+  );
+
   return (
     <div className={classes}>
+      {/* <SectionLikes publicData={publicData} /> */}
+      {sectionLikes}
       <ModalInMobile
         containerClassName={css.modalContainer}
         id="OrderFormInModal"
@@ -273,8 +373,14 @@ const OrderPanel = props => {
         </div>
 
         <div className={css.orderHeading}>
-          {titleDesktop ? titleDesktop : <H2 className={titleClasses}>{title}</H2>}
-          {subTitleText ? <div className={css.orderHelp}>{subTitleText}</div> : null}
+          {titleDesktop ? (
+            titleDesktop
+          ) : (
+            <H2 className={titleClasses}>{title}</H2>
+          )}
+          {subTitleText ? (
+            <div className={css.orderHelp}>{subTitleText}</div>
+          ) : null}
         </div>
 
         <PriceMaybe
@@ -288,12 +394,19 @@ const OrderPanel = props => {
         <div className={css.author}>
           <AvatarSmall user={author} className={css.providerAvatar} />
           <span className={css.providerNameLinked}>
-            <FormattedMessage id="OrderPanel.author" values={{ name: authorLink }} />
+            <FormattedMessage
+              id="OrderPanel.author"
+              values={{ name: authorLink }}
+            />
           </span>
           <span className={css.providerNamePlain}>
-            <FormattedMessage id="OrderPanel.author" values={{ name: authorDisplayName }} />
+            <FormattedMessage
+              id="OrderPanel.author"
+              values={{ name: authorDisplayName }}
+            />
           </span>
         </div>
+        {favoriteButton}
 
         {showPriceMissing ? (
           <PriceMissing />
@@ -365,7 +478,10 @@ const OrderPanel = props => {
             payoutDetailsWarning={payoutDetailsWarning}
           />
         ) : showInquiryForm ? (
-          <InquiryWithoutPaymentForm formId="OrderPanelInquiryForm" onSubmit={onSubmit} />
+          <InquiryWithoutPaymentForm
+            formId="OrderPanelInquiryForm"
+            onSubmit={onSubmit}
+          />
         ) : !isKnownProcess ? (
           <p className={css.errorSidebar}>
             <FormattedMessage id="OrderPanel.unknownTransactionProcess" />
