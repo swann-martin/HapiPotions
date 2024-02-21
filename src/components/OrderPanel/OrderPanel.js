@@ -301,7 +301,7 @@ const OrderPanel = props => {
     listing.id.uuid
   );
 
-  const IconStar = () => {
+  const IconStar = ({ fill = 'lightgrey' }) => {
     return (
       <svg viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg">
         <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>
@@ -311,7 +311,6 @@ const OrderPanel = props => {
           strokeLinejoin="round"
         ></g>
         <g id="SVGRepo_iconCarrier">
-          <title>star_fill</title>
           <g
             id="页面-1"
             stroke="none"
@@ -332,8 +331,8 @@ const OrderPanel = props => {
                 ></path>
                 <path
                   d="M10.9198,2.8677 C11.402,2.03987 12.598,2.03987 13.0801,2.8677 L15.8751,7.66643 L21.3027,8.84175 C22.239,9.0445 22.6086,10.1819 21.9703,10.8963 L18.2701,15.0374 L18.8295,20.5625 C18.926,21.5156 17.9585,22.2186 17.0818,21.8323 L12,19.5929 L6.91816,21.8323 C6.04149,22.2186 5.07395,21.5156 5.17046,20.5625 L5.72987,15.0374 L2.02972,10.8963 C1.3914,10.1819 1.76097,9.0445 2.69728,8.84175 L8.12484,7.66643 L10.9198,2.8677 Z"
-                  id="路径"
-                  fill="#f5c211"
+                  id="star"
+                  fill={fill}
                 ></path>
               </g>
             </g>
@@ -346,19 +345,27 @@ const OrderPanel = props => {
   const toggleFavorites = () => onToggleFavorites(isFavorite);
 
   const favoriteButton = isFavorite ? (
-    <SecondaryButton className={css.favoriteButton} onClick={toggleFavorites}>
-      <IconStar /> <FormattedMessage id="OrderPanel.unfavoriteButton" />
-    </SecondaryButton>
+    <div
+      className={css.favoriteButton}
+      onClick={toggleFavorites}
+      title="Remove from favorites"
+    >
+      <IconStar fill="#f5c211" />
+    </div>
   ) : (
-    <Button className={css.favoriteButton} onClick={toggleFavorites}>
-      <IconStar /> <FormattedMessage id="OrderPanel.addFavoriteButton" />
-    </Button>
+    <div
+      className={css.selected}
+      onClick={toggleFavorites}
+      title="Add to favorites"
+    >
+      <IconStar />
+    </div>
   );
 
   return (
     <div className={classes}>
-      {/* <SectionLikes publicData={publicData} /> */}
-      {sectionLikes}
+      {/* {sectionLikes} */}
+
       <ModalInMobile
         containerClassName={css.modalContainer}
         id="OrderFormInModal"
@@ -382,14 +389,16 @@ const OrderPanel = props => {
             <div className={css.orderHelp}>{subTitleText}</div>
           ) : null}
         </div>
-
-        <PriceMaybe
-          price={price}
-          publicData={publicData}
-          validListingTypes={validListingTypes}
-          intl={intl}
-          marketplaceCurrency={marketplaceCurrency}
-        />
+        <div className={css.flex}>
+          <PriceMaybe
+            price={price}
+            publicData={publicData}
+            validListingTypes={validListingTypes}
+            intl={intl}
+            marketplaceCurrency={marketplaceCurrency}
+          />
+          {favoriteButton}
+        </div>
 
         <div className={css.author}>
           <AvatarSmall user={author} className={css.providerAvatar} />
@@ -406,7 +415,6 @@ const OrderPanel = props => {
             />
           </span>
         </div>
-        {favoriteButton}
 
         {showPriceMissing ? (
           <PriceMissing />
@@ -497,6 +505,7 @@ const OrderPanel = props => {
           marketplaceCurrency={marketplaceCurrency}
           showCurrencyMismatch
         />
+        {favoriteButton}
 
         {isClosed ? (
           <div className={css.closedListingButton}>

@@ -419,7 +419,7 @@ export const ListingPageComponent = props => {
                   id="ListingPage.orderTitle"
                   values={{ title: richTitle }}
                 />
-                {sectionLikes}
+                {/* {sectionLikes} */}
               </H4>
             </div>
             <SectionTextMaybe text={description} showAsIngress />
