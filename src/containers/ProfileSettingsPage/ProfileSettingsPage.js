@@ -9,7 +9,13 @@ import { propTypes } from '../../util/types';
 import { ensureCurrentUser } from '../../util/data';
 import { isScrollingDisabled } from '../../ducks/ui.duck';
 
-import { H3, Page, UserNav, NamedLink, LayoutSingleColumn } from '../../components';
+import {
+  H3,
+  Page,
+  UserNav,
+  NamedLink,
+  LayoutSingleColumn,
+} from '../../components';
 
 import TopbarContainer from '../../containers/TopbarContainer/TopbarContainer';
 import FooterContainer from '../../containers/FooterContainer/FooterContainer';
@@ -42,7 +48,7 @@ export const ProfileSettingsPageComponent = props => {
   } = props;
 
   const handleSubmit = values => {
-    const { firstName, lastName, bio: rawBio } = values;
+    const { firstName, lastName, bio: rawBio, address1 } = values;
 
     // Ensure that the optional bio is a string
     const bio = rawBio || '';
@@ -51,6 +57,9 @@ export const ProfileSettingsPageComponent = props => {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       bio,
+      publicData: {
+        address1: address1,
+      },
     };
     const uploadedImage = props.image;
 
@@ -65,6 +74,7 @@ export const ProfileSettingsPageComponent = props => {
 
   const user = ensureCurrentUser(currentUser);
   const { firstName, lastName, bio } = user.attributes.profile;
+  const { address1 } = user.attributes.profile.publicData;
   const profileImageId = user.profileImage ? user.profileImage.id : null;
   const profileImage = image || { imageId: profileImageId };
 
@@ -72,7 +82,13 @@ export const ProfileSettingsPageComponent = props => {
     <ProfileSettingsForm
       className={css.form}
       currentUser={currentUser}
-      initialValues={{ firstName, lastName, bio, profileImage: user.profileImage }}
+      initialValues={{
+        firstName,
+        lastName,
+        bio,
+        profileImage: user.profileImage,
+        address1,
+      }}
       profileImage={profileImage}
       onImageUpload={e => onImageUploadHandler(e, onImageUpload)}
       uploadInProgress={uploadInProgress}
@@ -87,7 +103,11 @@ export const ProfileSettingsPageComponent = props => {
   const title = intl.formatMessage({ id: 'ProfileSettingsPage.title' });
 
   return (
-    <Page className={css.root} title={title} scrollingDisabled={scrollingDisabled}>
+    <Page
+      className={css.root}
+      title={title}
+      scrollingDisabled={scrollingDisabled}
+    >
       <LayoutSingleColumn
         topbar={
           <>

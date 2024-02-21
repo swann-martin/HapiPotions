@@ -20,6 +20,13 @@ const UserNav = props => {
       },
     },
     {
+      text: <FormattedMessage id="UserNav.favoriteListings" />,
+      selected: currentPage === 'FavoriteListingsPage',
+      linkProps: {
+        name: 'FavoriteListingsPage',
+      },
+    },
+    {
       text: <FormattedMessage id="UserNav.profileSettings" />,
       selected: currentPage === 'ProfileSettingsPage',
       disabled: false,
@@ -38,7 +45,12 @@ const UserNav = props => {
   ];
 
   return (
-    <LinkTabNavHorizontal className={classes} tabRootClassName={css.tab} tabs={tabs} skin="dark" />
+    <LinkTabNavHorizontal
+      className={classes}
+      tabRootClassName={css.tab}
+      tabs={tabs}
+      skin="dark"
+    />
   );
 };
 

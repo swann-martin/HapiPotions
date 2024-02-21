@@ -1,7 +1,10 @@
 import React from 'react';
 import { FormattedMessage } from '../../util/reactIntl';
 import { types as sdkTypes } from '../../util/sdkLoader';
-import { createResourceLocatorString, findRouteByRouteName } from '../../util/routes';
+import {
+  createResourceLocatorString,
+  findRouteByRouteName,
+} from '../../util/routes';
 import { formatMoney } from '../../util/currency';
 import { timestampToDate } from '../../util/dates';
 import { createSlug } from '../../util/urlHelpers';
@@ -16,6 +19,52 @@ import css from './ListingPage.module.css';
  */
 
 const { UUID } = sdkTypes;
+
+export const handleToggleFavorites = parameters => isFavorite => {
+  const { currentUser, routes, location, history } = parameters;
+
+  // Only allow signed-in users to save favorites
+  if (!currentUser) {
+    const state = {
+      from: `${location.pathname}${location.search}${location.hash}`,
+    };
+
+    // Sign up and return back to the listing page.
+    history.push(
+      createResourceLocatorString('SignupPage', routes, {}, {}),
+      state
+    );
+  } else {
+    const { params, onUpdateFavorites } = parameters;
+    const {
+      attributes: { profile },
+    } = currentUser;
+    const { favorites = [] } = profile.privateData || {};
+
+    let payload;
+
+    if (!profile.privateData || !profile.privateData?.favorites) {
+      payload = {
+        privateData: {
+          favorites: [params.id],
+        },
+      };
+    } else if (isFavorite) {
+      payload = {
+        privateData: {
+          favorites: favorites.filter(f => f !== params.id),
+        },
+      };
+    } else {
+      payload = {
+        privateData: {
+          favorites: [...favorites, params.id],
+        },
+      };
+    }
+    onUpdateFavorites(payload);
+  }
+};
 
 /**
  * Helper to get formattedPrice and priceTitle for SectionHeading component.
@@ -90,14 +139,21 @@ export const handleContactUser = parameters => () => {
   } = parameters;
 
   if (!currentUser) {
-    const state = { from: `${location.pathname}${location.search}${location.hash}` };
+    const state = {
+      from: `${location.pathname}${location.search}${location.hash}`,
+    };
 
     // We need to log in before showing the modal, but first we need to ensure
     // that modal does open when user is redirected back to this listingpage
-    callSetInitialValues(setInitialValues, { inquiryModalOpenForListingId: params.id });
+    callSetInitialValues(setInitialValues, {
+      inquiryModalOpenForListingId: params.id,
+    });
 
     // signup and return back to listingPage.
-    history.push(createResourceLocatorString('SignupPage', routes, {}, {}), state);
+    history.push(
+      createResourceLocatorString('SignupPage', routes, {}, {}),
+      state
+    );
   } else {
     setInquiryModalOpen(true);
   }
@@ -110,7 +166,14 @@ export const handleContactUser = parameters => () => {
  * @param {Object} parameters all the info needed to create inquiry.
  */
 export const handleSubmitInquiry = parameters => values => {
-  const { history, params, getListing, onSendInquiry, routes, setInquiryModalOpen } = parameters;
+  const {
+    history,
+    params,
+    getListing,
+    onSendInquiry,
+    routes,
+    setInquiryModalOpen,
+  } = parameters;
   const listingId = new UUID(params.id);
   const listing = getListing(listingId);
   const { message } = values;
@@ -120,7 +183,14 @@ export const handleSubmitInquiry = parameters => values => {
       setInquiryModalOpen(false);
 
       // Redirect to OrderDetailsPage
-      history.push(createResourceLocatorString('OrderDetailsPage', routes, { id: txId.uuid }, {}));
+      history.push(
+        createResourceLocatorString(
+          'OrderDetailsPage',
+          routes,
+          { id: txId.uuid },
+          {}
+        )
+      );
     })
     .catch(() => {
       // Ignore, error handling in duck file

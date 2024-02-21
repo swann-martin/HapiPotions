@@ -288,3 +288,43 @@
     padding: 0;
   }
 }
+
+.favoriteButton {
+  padding: 1rem;
+  min-height: 2rem;
+  min-width: 4rem;
+  width: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10%;
+  margin-right: 0.5rem;
+}
+
+.favoriteButton:hover,
+.selected:hover {
+  background-color: var(--colorGrey100);
+  cursor: pointer;
+}
+.selected {
+  padding: 1rem;
+  min-height: 2rem;
+  min-width: 4rem;
+  width: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10%;
+  margin-right: 0.5rem;
+}
+
+.favoriteButton > svg,
+.selected > svg {
+  max-height: 1.5rem;
+}
+
+.flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}

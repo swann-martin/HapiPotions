@@ -57,7 +57,8 @@ const TopbarDesktop = props => {
     />
   );
 
-  const notificationDot = notificationCount > 0 ? <div className={css.notificationDot} /> : null;
+  const notificationDot =
+    notificationCount > 0 ? <div className={css.notificationDot} /> : null;
 
   const inboxLink = authenticatedOnClientSide ? (
     <NamedLink
@@ -74,28 +75,53 @@ const TopbarDesktop = props => {
 
   const currentPageClass = page => {
     const isAccountSettingsPage =
-      page === 'AccountSettingsPage' && ACCOUNT_SETTINGS_PAGES.includes(currentPage);
-    return currentPage === page || isAccountSettingsPage ? css.currentPage : null;
+      page === 'AccountSettingsPage' &&
+      ACCOUNT_SETTINGS_PAGES.includes(currentPage);
+    return currentPage === page || isAccountSettingsPage
+      ? css.currentPage
+      : null;
   };
 
   const profileMenu = authenticatedOnClientSide ? (
     <Menu>
-      <MenuLabel className={css.profileMenuLabel} isOpenClassName={css.profileMenuIsOpen}>
+      <MenuLabel
+        className={css.profileMenuLabel}
+        isOpenClassName={css.profileMenuIsOpen}
+      >
         <Avatar className={css.avatar} user={currentUser} disableProfileLink />
       </MenuLabel>
       <MenuContent className={css.profileMenuContent}>
         <MenuItem key="ManageListingsPage">
           <NamedLink
-            className={classNames(css.yourListingsLink, currentPageClass('ManageListingsPage'))}
+            className={classNames(
+              css.yourListingsLink,
+              currentPageClass('ManageListingsPage')
+            )}
             name="ManageListingsPage"
           >
             <span className={css.menuItemBorder} />
             <FormattedMessage id="TopbarDesktop.yourListingsLink" />
           </NamedLink>
         </MenuItem>
+        <MenuItem key="FavoriteListingsPage">
+          <NamedLink
+            className={classNames(
+              css.yourListingsLink,
+              currentPageClass('FavoriteListingsPage')
+            )}
+            name="FavoriteListingsPage"
+          >
+            <span className={css.menuItemBorder} />
+            <FormattedMessage id="TopbarDesktop.favoriteListingsLink" />
+          </NamedLink>
+        </MenuItem>
+
         <MenuItem key="ProfileSettingsPage">
           <NamedLink
-            className={classNames(css.profileSettingsLink, currentPageClass('ProfileSettingsPage'))}
+            className={classNames(
+              css.profileSettingsLink,
+              currentPageClass('ProfileSettingsPage')
+            )}
             name="ProfileSettingsPage"
           >
             <span className={css.menuItemBorder} />
@@ -104,7 +130,10 @@ const TopbarDesktop = props => {
         </MenuItem>
         <MenuItem key="AccountSettingsPage">
           <NamedLink
-            className={classNames(css.yourListingsLink, currentPageClass('AccountSettingsPage'))}
+            className={classNames(
+              css.yourListingsLink,
+              currentPageClass('AccountSettingsPage')
+            )}
             name="AccountSettingsPage"
           >
             <span className={css.menuItemBorder} />
@@ -142,7 +171,10 @@ const TopbarDesktop = props => {
       <LinkedLogo
         className={css.logoLink}
         layout="desktop"
-        alt={intl.formatMessage({ id: 'TopbarDesktop.logo' }, { marketplaceName })}
+        alt={intl.formatMessage(
+          { id: 'TopbarDesktop.logo' },
+          { marketplaceName }
+        )}
       />
       {search}
       <NamedLink className={css.createListingLink} name="NewListingPage">

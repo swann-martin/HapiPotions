@@ -1,6 +1,9 @@
 import pick from 'lodash/pick';
 
-import { types as sdkTypes, createImageVariantConfig } from '../../util/sdkLoader';
+import {
+  types as sdkTypes,
+  createImageVariantConfig,
+} from '../../util/sdkLoader';
 import { storableError } from '../../util/errors';
 import { addMarketplaceEntities } from '../../ducks/marketplaceData.duck';
 import { transactionLineItems } from '../../util/api';
@@ -11,8 +14,15 @@ import {
   LISTING_PAGE_DRAFT_VARIANT,
   LISTING_PAGE_PENDING_APPROVAL_VARIANT,
 } from '../../util/urlHelpers';
-import { getProcess, isBookingProcessAlias } from '../../transactions/transaction';
-import { fetchCurrentUser, fetchCurrentUserHasOrdersSuccess } from '../../ducks/user.duck';
+import {
+  getProcess,
+  isBookingProcessAlias,
+} from '../../transactions/transaction';
+import {
+  fetchCurrentUser,
+  fetchCurrentUserHasOrdersSuccess,
+  currentUserShowSuccess,
+} from '../../ducks/user.duck';
 
 const { UUID } = sdkTypes;
 
@@ -27,17 +37,25 @@ export const FETCH_REVIEWS_REQUEST = 'app/ListingPage/FETCH_REVIEWS_REQUEST';
 export const FETCH_REVIEWS_SUCCESS = 'app/ListingPage/FETCH_REVIEWS_SUCCESS';
 export const FETCH_REVIEWS_ERROR = 'app/ListingPage/FETCH_REVIEWS_ERROR';
 
-export const FETCH_TIME_SLOTS_REQUEST = 'app/ListingPage/FETCH_TIME_SLOTS_REQUEST';
-export const FETCH_TIME_SLOTS_SUCCESS = 'app/ListingPage/FETCH_TIME_SLOTS_SUCCESS';
+export const FETCH_TIME_SLOTS_REQUEST =
+  'app/ListingPage/FETCH_TIME_SLOTS_REQUEST';
+export const FETCH_TIME_SLOTS_SUCCESS =
+  'app/ListingPage/FETCH_TIME_SLOTS_SUCCESS';
 export const FETCH_TIME_SLOTS_ERROR = 'app/ListingPage/FETCH_TIME_SLOTS_ERROR';
 
-export const FETCH_LINE_ITEMS_REQUEST = 'app/ListingPage/FETCH_LINE_ITEMS_REQUEST';
-export const FETCH_LINE_ITEMS_SUCCESS = 'app/ListingPage/FETCH_LINE_ITEMS_SUCCESS';
+export const FETCH_LINE_ITEMS_REQUEST =
+  'app/ListingPage/FETCH_LINE_ITEMS_REQUEST';
+export const FETCH_LINE_ITEMS_SUCCESS =
+  'app/ListingPage/FETCH_LINE_ITEMS_SUCCESS';
 export const FETCH_LINE_ITEMS_ERROR = 'app/ListingPage/FETCH_LINE_ITEMS_ERROR';
 
 export const SEND_INQUIRY_REQUEST = 'app/ListingPage/SEND_INQUIRY_REQUEST';
 export const SEND_INQUIRY_SUCCESS = 'app/ListingPage/SEND_INQUIRY_SUCCESS';
 export const SEND_INQUIRY_ERROR = 'app/ListingPage/SEND_INQUIRY_ERROR';
+
+export const UPDATE_LIKES_REQUEST = 'app/ListingPage/UPDATE_LIKES_REQUEST';
+export const UPDATE_LIKES_SUCCESS = 'app/ListingPage/UPDATE_LIKES_SUCCESS';
+export const UPDATE_LIKES_ERROR = 'app/ListingPage/UPDATE_LIKES_ERROR';
 
 // ================ Reducer ================ //
 
@@ -59,6 +77,8 @@ const initialState = {
   sendInquiryInProgress: false,
   sendInquiryError: null,
   inquiryModalOpenForListingId: null,
+  updateLikesError: null,
+  updateLikesInProgress: false,
 };
 
 const listingPageReducer = (state = initialState, action = {}) => {
@@ -116,18 +136,41 @@ const listingPageReducer = (state = initialState, action = {}) => {
     }
 
     case FETCH_LINE_ITEMS_REQUEST:
-      return { ...state, fetchLineItemsInProgress: true, fetchLineItemsError: null };
+      return {
+        ...state,
+        fetchLineItemsInProgress: true,
+        fetchLineItemsError: null,
+      };
     case FETCH_LINE_ITEMS_SUCCESS:
       return { ...state, fetchLineItemsInProgress: false, lineItems: payload };
     case FETCH_LINE_ITEMS_ERROR:
-      return { ...state, fetchLineItemsInProgress: false, fetchLineItemsError: payload };
+      return {
+        ...state,
+        fetchLineItemsInProgress: false,
+        fetchLineItemsError: payload,
+      };
 
     case SEND_INQUIRY_REQUEST:
       return { ...state, sendInquiryInProgress: true, sendInquiryError: null };
     case SEND_INQUIRY_SUCCESS:
       return { ...state, sendInquiryInProgress: false };
     case SEND_INQUIRY_ERROR:
-      return { ...state, sendInquiryInProgress: false, sendInquiryError: payload };
+      return {
+        ...state,
+        sendInquiryInProgress: false,
+        sendInquiryError: payload,
+      };
+
+    case UPDATE_LIKES_REQUEST:
+      return { ...state, updateLikesInProgress: true, updateLikesError: null };
+    case UPDATE_LIKES_SUCCESS:
+      return { ...state, updateLikesInProgress: false };
+    case UPDATE_LIKES_ERROR:
+      return {
+        ...state,
+        updateLikesInProgress: false,
+        updateLikesError: payload,
+      };
 
     default:
       return state;
@@ -155,7 +198,10 @@ export const showListingError = e => ({
 });
 
 export const fetchReviewsRequest = () => ({ type: FETCH_REVIEWS_REQUEST });
-export const fetchReviewsSuccess = reviews => ({ type: FETCH_REVIEWS_SUCCESS, payload: reviews });
+export const fetchReviewsSuccess = reviews => ({
+  type: FETCH_REVIEWS_SUCCESS,
+  payload: reviews,
+});
 export const fetchReviewsError = error => ({
   type: FETCH_REVIEWS_ERROR,
   error: true,
@@ -189,11 +235,33 @@ export const fetchLineItemsError = error => ({
 
 export const sendInquiryRequest = () => ({ type: SEND_INQUIRY_REQUEST });
 export const sendInquirySuccess = () => ({ type: SEND_INQUIRY_SUCCESS });
-export const sendInquiryError = e => ({ type: SEND_INQUIRY_ERROR, error: true, payload: e });
+export const sendInquiryError = e => ({
+  type: SEND_INQUIRY_ERROR,
+  error: true,
+  payload: e,
+});
+
+export const updateLikesRequest = params => ({
+  type: UPDATE_LIKES_REQUEST,
+  payload: { params },
+});
+export const updateLikesSuccess = result => ({
+  type: UPDATE_LIKES_SUCCESS,
+  payload: result.data,
+});
+export const updateLikesError = error => ({
+  type: UPDATE_LIKES_ERROR,
+  payload: error,
+  error: true,
+});
 
 // ================ Thunks ================ //
 
-export const showListing = (listingId, config, isOwn = false) => (dispatch, getState, sdk) => {
+export const showListing = (listingId, config, isOwn = false) => (
+  dispatch,
+  getState,
+  sdk
+) => {
   const {
     aspectWidth = 1,
     aspectHeight = 1,
@@ -271,7 +339,11 @@ const timeSlotsRequest = params => (dispatch, getState, sdk) => {
   });
 };
 
-export const fetchTimeSlots = (listingId, start, end, timeZone) => (dispatch, getState, sdk) => {
+export const fetchTimeSlots = (listingId, start, end, timeZone) => (
+  dispatch,
+  getState,
+  sdk
+) => {
   const monthId = monthIdString(start, timeZone);
 
   dispatch(fetchTimeSlotsRequest(monthId));
@@ -336,7 +408,9 @@ const fetchMonthlyTimeSlots = (dispatch, listing) => {
   const attributes = listing.attributes;
   // Listing could be ownListing entity too, so we just check if attributes key exists
   const hasTimeZone =
-    attributes && attributes.availabilityPlan && attributes.availabilityPlan.timezone;
+    attributes &&
+    attributes.availabilityPlan &&
+    attributes.availabilityPlan.timezone;
 
   // Fetch time-zones on client side only.
   if (hasWindow && listing.id && hasTimeZone) {
@@ -358,7 +432,11 @@ const fetchMonthlyTimeSlots = (dispatch, listing) => {
   return Promise.all([]);
 };
 
-export const fetchTransactionLineItems = ({ orderData, listingId, isOwnListing }) => dispatch => {
+export const fetchTransactionLineItems = ({
+  orderData,
+  listingId,
+  isOwnListing,
+}) => dispatch => {
   dispatch(fetchLineItemsRequest());
   transactionLineItems({ orderData, listingId, isOwnListing })
     .then(response => {
@@ -374,13 +452,24 @@ export const fetchTransactionLineItems = ({ orderData, listingId, isOwnListing }
     });
 };
 
+/**
+ * Loads data and dispatches actions based on the parameters.
+ *
+ * @param {object} params - The parameters for loading the data
+ * @param {string} search - The search query
+ * @param {object} config - The configuration object
+ * @return {function} A function that dispatches actions
+ */
 export const loadData = (params, search, config) => dispatch => {
   const listingId = new UUID(params.id);
 
   // Clear old line-items
   dispatch(setInitialValues({ lineItems: null }));
 
-  const ownListingVariants = [LISTING_PAGE_DRAFT_VARIANT, LISTING_PAGE_PENDING_APPROVAL_VARIANT];
+  const ownListingVariants = [
+    LISTING_PAGE_DRAFT_VARIANT,
+    LISTING_PAGE_PENDING_APPROVAL_VARIANT,
+  ];
   if (ownListingVariants.includes(params.variant)) {
     return dispatch(showListing(listingId, config, true));
   }
@@ -390,7 +479,8 @@ export const loadData = (params, search, config) => dispatch => {
     dispatch(fetchReviews(listingId)),
   ]).then(response => {
     const listing = response[0].data.data;
-    const transactionProcessAlias = listing?.attributes?.publicData?.transactionProcessAlias || '';
+    const transactionProcessAlias =
+      listing?.attributes?.publicData?.transactionProcessAlias || '';
     if (isBookingProcessAlias(transactionProcessAlias)) {
       // Fetch timeSlots.
       // This can happen parallel to loadData.
@@ -398,5 +488,56 @@ export const loadData = (params, search, config) => dispatch => {
       fetchMonthlyTimeSlots(dispatch, listing);
     }
     return response;
+  });
+};
+
+/**
+ * Update the likes for a listing by the current user.
+ *
+ * @param {string} listingId - The ID of the listing to update likes for
+ * @return {Promise} A Promise that resolves when the update is completed
+ */
+export const updateLikes = listingId => (dispatch, getState, sdk) => {
+  dispatch(updateLikesRequest());
+
+  return dispatch(fetchCurrentUser()).then(() => {
+    const currentUser = getState().user.currentUser;
+    const currentLikes =
+      currentUser?.attributes?.profile?.privateData?.likedListings;
+
+    const queryParams = {
+      expand: true,
+      include: ['profileImage'],
+      'fields.image': ['variants.square-small', 'variants.square-small2x'],
+    };
+
+    // if listingId already exists in currentLikes, it should be removed from currentLikes
+    // if user has current likes, merge listingId into current likes
+    const ifDislike = !!currentLikes?.includes(listingId);
+    const likedListings = ifDislike
+      ? currentLikes.filter(id => id !== listingId)
+      : currentLikes
+      ? [...currentLikes, listingId]
+      : [listingId];
+
+    return sdk.currentUser
+      .updateProfile({ privateData: { likedListings } }, queryParams)
+      .then(response => {
+        dispatch(updateLikesSuccess(response));
+
+        const entities = denormalisedResponseEntities(response);
+        if (entities.length !== 1) {
+          throw new Error(
+            'Expected a resource in the sdk.currentUser.updateProfile response'
+          );
+        }
+        const currentUser = entities[0];
+
+        // Update current user in state.user.currentUser through user.duck.js
+        dispatch(currentUserShowSuccess(currentUser));
+      })
+      .catch(e => {
+        dispatch(updateLikesError(storableError(e)));
+      });
   });
 };

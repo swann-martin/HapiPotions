@@ -6,7 +6,11 @@ import classNames from 'classnames';
 
 import { useConfiguration } from '../../context/configurationContext';
 import { FormattedMessage, injectIntl, intlShape } from '../../util/reactIntl';
-import { REVIEW_TYPE_OF_PROVIDER, REVIEW_TYPE_OF_CUSTOMER, propTypes } from '../../util/types';
+import {
+  REVIEW_TYPE_OF_PROVIDER,
+  REVIEW_TYPE_OF_CUSTOMER,
+  propTypes,
+} from '../../util/types';
 import { ensureCurrentUser, ensureUser } from '../../util/data';
 import { withViewport } from '../../util/uiHelpers';
 import { isScrollingDisabled } from '../../ducks/ui.duck';
@@ -39,7 +43,10 @@ export const AsideContent = props => {
       <AvatarLarge className={css.avatar} user={user} disableProfileLink />
       <H2 as="h1" className={css.mobileHeading}>
         {displayName ? (
-          <FormattedMessage id="ProfilePage.mobileHeading" values={{ name: displayName }} />
+          <FormattedMessage
+            id="ProfilePage.mobileHeading"
+            values={{ name: displayName }}
+          />
         ) : null}
       </H2>
       {isCurrentUser ? (
@@ -67,8 +74,12 @@ export const ReviewsErrorMaybe = props => {
 
 export const MobileReviews = props => {
   const { reviews, queryReviewsError } = props;
-  const reviewsOfProvider = reviews.filter(r => r.attributes.type === REVIEW_TYPE_OF_PROVIDER);
-  const reviewsOfCustomer = reviews.filter(r => r.attributes.type === REVIEW_TYPE_OF_CUSTOMER);
+  const reviewsOfProvider = reviews.filter(
+    r => r.attributes.type === REVIEW_TYPE_OF_PROVIDER
+  );
+  const reviewsOfCustomer = reviews.filter(
+    r => r.attributes.type === REVIEW_TYPE_OF_CUSTOMER
+  );
   return (
     <div className={css.mobileReviews}>
       <H4 as="h2" className={css.mobileReviewsTitle}>
@@ -92,12 +103,20 @@ export const MobileReviews = props => {
 };
 
 export const DesktopReviews = props => {
-  const [showReviewsType, setShowReviewsType] = useState(REVIEW_TYPE_OF_PROVIDER);
+  const [showReviewsType, setShowReviewsType] = useState(
+    REVIEW_TYPE_OF_PROVIDER
+  );
   const { reviews, queryReviewsError } = props;
-  const reviewsOfProvider = reviews.filter(r => r.attributes.type === REVIEW_TYPE_OF_PROVIDER);
-  const reviewsOfCustomer = reviews.filter(r => r.attributes.type === REVIEW_TYPE_OF_CUSTOMER);
-  const isReviewTypeProviderSelected = showReviewsType === REVIEW_TYPE_OF_PROVIDER;
-  const isReviewTypeCustomerSelected = showReviewsType === REVIEW_TYPE_OF_CUSTOMER;
+  const reviewsOfProvider = reviews.filter(
+    r => r.attributes.type === REVIEW_TYPE_OF_PROVIDER
+  );
+  const reviewsOfCustomer = reviews.filter(
+    r => r.attributes.type === REVIEW_TYPE_OF_CUSTOMER
+  );
+  const isReviewTypeProviderSelected =
+    showReviewsType === REVIEW_TYPE_OF_PROVIDER;
+  const isReviewTypeCustomerSelected =
+    showReviewsType === REVIEW_TYPE_OF_CUSTOMER;
   const desktopReviewTabs = [
     {
       text: (
@@ -128,7 +147,10 @@ export const DesktopReviews = props => {
   return (
     <div className={css.desktopReviews}>
       <div className={css.desktopReviewsWrapper}>
-        <ButtonTabNavHorizontal className={css.desktopReviewsTabNav} tabs={desktopReviewTabs} />
+        <ButtonTabNavHorizontal
+          className={css.desktopReviewsTabNav}
+          tabs={desktopReviewTabs}
+        />
 
         <ReviewsErrorMaybe queryReviewsError={queryReviewsError} />
 
@@ -148,15 +170,19 @@ export const MainContent = props => {
     bio,
     displayName,
     listings,
+    favourite = [],
     queryListingsError,
     reviews,
     queryReviewsError,
     viewport,
+    addresses,
   } = props;
 
   const hasListings = listings.length > 0;
+  const hasFavourites = favourite.length > 0;
   const isMobileLayout = viewport.width < MAX_MOBILE_SCREEN_WIDTH;
   const hasBio = !!bio;
+  const hasAddresses = !!addresses;
 
   const listingsContainerClasses = classNames(css.listingsContainer, {
     [css.withBioMissingAbove]: !hasBio,
@@ -172,13 +198,19 @@ export const MainContent = props => {
   return (
     <div>
       <H2 as="h1" className={css.desktopHeading}>
-        <FormattedMessage id="ProfilePage.desktopHeading" values={{ name: displayName }} />
+        <FormattedMessage
+          id="ProfilePage.desktopHeading"
+          values={{ name: displayName }}
+        />
       </H2>
       {hasBio ? <p className={css.bio}>{bio}</p> : null}
       {hasListings ? (
         <div className={listingsContainerClasses}>
           <H4 as="h2" className={css.listingsTitle}>
-            <FormattedMessage id="ProfilePage.listingsTitle" values={{ count: listings.length }} />
+            <FormattedMessage
+              id="ProfilePage.listingsTitle"
+              values={{ count: listings.length }}
+            />
           </H4>
           <ul className={css.listings}>
             {listings.map(l => (
@@ -189,10 +221,50 @@ export const MainContent = props => {
           </ul>
         </div>
       ) : null}
+
+      {hasAddresses ? (
+        <div className={listingsContainerClasses}>
+          <H4 as="h2" className={css.listingsTitle}>
+            <FormattedMessage id="ProfilePage.Locations" />
+          </H4>
+          {addresses.map(
+            (address, id) =>
+              !!address && (
+                <div key={id + '-' + address}>
+                  <span>{address}</span>
+                </div>
+              )
+          )}
+        </div>
+      ) : null}
+      {hasFavourites ? (
+        <div className={listingsContainerClasses}>
+          <H4 as="h2" className={css.listingsTitle}>
+            <FormattedMessage id="ProfilePage.Favorites" />
+          </H4>
+          <ul className={css.listings}>
+            {listings
+              .filter(l => l.attributes.favourite)
+              .map(l => (
+                <li className={css.listing} key={l.id.uuid}>
+                  Test
+                </li>
+              ))
+              .reverse()}
+          </ul>
+        </div>
+      ) : null}
+
       {isMobileLayout ? (
-        <MobileReviews reviews={reviews} queryReviewsError={queryReviewsError} />
+        <MobileReviews
+          reviews={reviews}
+          queryReviewsError={queryReviewsError}
+        />
       ) : (
-        <DesktopReviews reviews={reviews} queryReviewsError={queryReviewsError} />
+        <DesktopReviews
+          reviews={reviews}
+          queryReviewsError={queryReviewsError}
+        />
       )}
     </div>
   );
@@ -200,15 +272,36 @@ export const MainContent = props => {
 
 const ProfilePageComponent = props => {
   const config = useConfiguration();
-  const { scrollingDisabled, currentUser, userShowError, user, intl, ...rest } = props;
+  const {
+    scrollingDisabled,
+    currentUser,
+    userShowError,
+    user,
+    intl,
+    ...rest
+  } = props;
   const ensuredCurrentUser = ensureCurrentUser(currentUser);
   const profileUser = ensureUser(user);
   const isCurrentUser =
-    ensuredCurrentUser.id && profileUser.id && ensuredCurrentUser.id.uuid === profileUser.id.uuid;
-  const { bio, displayName } = profileUser?.attributes?.profile || {};
+    ensuredCurrentUser.id &&
+    profileUser.id &&
+    ensuredCurrentUser.id.uuid === profileUser.id.uuid;
 
-  const schemaTitleVars = { name: displayName, marketplaceName: config.marketplaceName };
-  const schemaTitle = intl.formatMessage({ id: 'ProfilePage.schemaTitle' }, schemaTitleVars);
+  const { bio, displayName, publicData } =
+    profileUser?.attributes?.profile || {};
+  const addresses = [
+    publicData?.address1?.selectedPlace?.address,
+    publicData?.address2?.selectedPlace?.address,
+  ];
+  console.log('address', publicData);
+  const schemaTitleVars = {
+    name: displayName,
+    marketplaceName: config.marketplaceName,
+  };
+  const schemaTitle = intl.formatMessage(
+    { id: 'ProfilePage.schemaTitle' },
+    schemaTitleVars
+  );
 
   if (userShowError && userShowError.status === 404) {
     return <NotFoundPage />;
@@ -227,11 +320,22 @@ const ProfilePageComponent = props => {
         sideNavClassName={css.aside}
         topbar={<TopbarContainer currentPage="ProfilePage" />}
         sideNav={
-          <AsideContent user={user} isCurrentUser={isCurrentUser} displayName={displayName} />
+          <AsideContent
+            user={user}
+            isCurrentUser={isCurrentUser}
+            displayName={displayName}
+          />
         }
         footer={<FooterContainer />}
       >
-        <MainContent bio={bio} displayName={displayName} userShowError={userShowError} {...rest} />
+        <MainContent
+          bio={bio}
+          favourite={user?.favourite}
+          displayName={displayName}
+          addresses={addresses}
+          userShowError={userShowError}
+          {...rest}
+        />
       </LayoutSideNavigation>
     </Page>
   );
@@ -253,6 +357,7 @@ ProfilePageComponent.propTypes = {
   userShowError: propTypes.error,
   queryListingsError: propTypes.error,
   listings: arrayOf(propTypes.listing).isRequired,
+  favourite: arrayOf(propTypes.listing).isRequired,
   reviews: arrayOf(propTypes.review),
   queryReviewsError: propTypes.error,
 
@@ -276,7 +381,9 @@ const mapStateToProps = state => {
     reviews,
     queryReviewsError,
   } = state.ProfilePage;
-  const userMatches = getMarketplaceEntities(state, [{ type: 'user', id: userId }]);
+  const userMatches = getMarketplaceEntities(state, [
+    { type: 'user', id: userId },
+  ]);
   const user = userMatches.length === 1 ? userMatches[0] : null;
   const listings = getMarketplaceEntities(state, userListingRefs);
   return {
